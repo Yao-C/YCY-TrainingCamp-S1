@@ -68,10 +68,14 @@ class BrakeBanner {
 			// bikeLeverImage.rotation = Math.PI / 180 * -30; // 按刹车效果
 			// 用gasp效果后，刹车更逼真
 			gsap.to(bikeLeverImage, { duration: 0.6, rotation: Math.PI / 180 * -30 });
+
+			pause();
 		})
 		actionButton.on("mouseup", () => {
 			// bikeLeverImage.rotation = 0; 
 			gsap.to(bikeLeverImage, { duration: 0.6, rotation: 0 });
+
+			start();
 		})
 
     // 使自行车根据窗口大小而调节，一直处于窗口右下角
@@ -81,6 +85,91 @@ class BrakeBanner {
 		}
 		window.addEventListener('resize', resize);
 		resize();
+
+
+		// 创建粒子
+		// 粒子有多个颜色
+		// 向某一角度持续移动
+		// 超出边界后回到顶部继续移动
+		// 按住鼠标停止
+		// 停止的时候还有一点回弹的效果
+		// 松开鼠标继续
+		let particleContainer = new PIXI.Container();
+		this.stage.addChild(particleContainer);
+    
+		particleContainer.rotation = Math.PI / 180 * 35;
+		particleContainer.pivot.x = window.innerWidth / 2;
+		particleContainer.pivot.y = window.innerHeight / 2;
+		particleContainer.x = window.innerWidth / 2;
+		particleContainer.y = window.innerHeight / 2;
+
+
+		let particles = [];
+		const colors = [0xf1cf54, 0xb5cea8, 0xf1cf54, 0x818181, 0x000000];
+
+		for (let i = 0; i < 10; i++){
+			let gr = new PIXI.Graphics();
+
+			gr.beginFill(colors[Math.floor(Math.random() * colors.length)]);
+			gr.drawCircle(0, 0, 6);
+			gr.endFill();
+
+			let pItem = {
+				// 初始坐标
+				sx: Math.random() * window.innerWidth,
+				sy: Math.random() * window.innerHeight,
+				// 粒子实例本身
+				gr: gr
+			}
+
+			gr.x = pItem.sx;
+			gr.y = pItem.sy;
+
+			particleContainer.addChild(gr);
+			particles.push(pItem);
+		}
+
+		let speed = 0;
+		function loop() {
+			speed += .5;
+			speed = Math.min(speed, 20); // 不能太快，最大值为20
+
+			for (let i = 0; i < particles.length; i++) {
+				let pItem = particles[i];
+				pItem.gr.y += speed; // 速度由慢变快
+
+				if (speed >= 20) {
+					// 动效小技巧，粒子变成粒子线：x 0.1，让线有颗粒感：x 0.03
+					pItem.gr.scale.x = 0.03;
+					pItem.gr.scale.y = 40;
+				}
+
+
+				if (pItem.gr.y > window.innerHeight) pItem.gr.y = 0;
+			}
+		}
+
+		function start() {
+			speed = 0;
+			gsap.ticker.add(loop);
+		}
+
+		function pause() {
+			gsap.ticker.remove(loop);
+
+			for (let i = 0; i < particles.length; i++) {
+				let pItem = particles[i];
+
+				// 暂停刹车后，显示静止粒子
+				pItem.gr.scale.x = 1;
+				pItem.gr.scale.y = 1;
+
+				gsap.to(pItem.gr, {duration:0.6, x:pItem.sx, y:pItem.sy, ease:'elastic.out'});
+			}
+		}
+
+		start();
+
 	}
 
 	createActionButton() {
